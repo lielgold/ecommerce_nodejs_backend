@@ -1,0 +1,23 @@
+extends layout
+
+block content
+  h1= title
+  p Welcome to #{title}
+  
+  // Dummy Table
+  table
+    thead
+      tr
+        th Name
+        th Age
+        th Occupation
+
+    tbody
+      each person in dummy_table_data
+        tr
+          td= person.name
+          td= person.age
+          td= person.occupation
+
+  
+

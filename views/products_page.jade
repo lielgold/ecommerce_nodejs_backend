@@ -1,0 +1,50 @@
+extends layout
+
+block content
+  h1= title
+  p Products Page
+
+  // Form for adding a new person
+  form(action='/products', method='post')
+    label(for='name') Name:
+    input(type='text', name='name', required)
+
+    label(for='age') Age:
+    input(type='number', name='age', required)
+
+    label(for='occupation') Occupation:
+    input(type='text', name='occupation', required)
+
+    button(type='submit') Add Person  
+  
+  // Products listing
+  table
+    thead
+      tr.text-left
+        th Name
+        th Age
+        th Occupation
+        th Actions
+
+    tbody
+      each person in employeeData
+        tr
+          td= person.name
+          td
+            span(class='editable' id=`age_${person.name}`)= person.age
+            form(action=`/edit/${person.name}`, method='post', style='display:inline;')              
+              input(type='number', name='newAge', required)
+              button(type='submit') Update
+          td
+            span(class='editable' id=`occupation_${person.name}`)= person.occupation
+            form(action=`/edit/${person.name}`, method='post', style='display:inline;')              
+              input(type='text', name='newOccupation', required)
+              button(type='submit') Update
+
+          
+          td
+            form(action=`/remove/${person.name}`, method='post', style='display:inline;')
+              button(type='submit', style='color: red;') Delete
+
+  
+
