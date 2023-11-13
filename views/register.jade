@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  h1 Register
+  if error_message
+    p.error= error_message
+  form(method='post', action='/register')
+    p
+      label(for='username') Username:
+      input(type='text', name='username', id='username')
+    p
+      label(for='password') Password:
+      input(type='text', name='password', id='password')
+    p
+      label(for='retype_password') Retype Password:
+      input(type='text', name='retype_password', id='retype_password')      
+    p
+      input(type='submit', value='Register')
