@@ -1,5 +1,8 @@
 var express = require('express');
 var router = express.Router();
+
+// dummy database
+
 const EmployeeModel = require('../models/EmployeeModel');
 
 const dummy_table_data = [
@@ -28,17 +31,6 @@ async function add_dummy_data(){
 
 }
 
-async function get_data(){
-  try {
-    console.log('get_data 1'); 
-    const data = await EmployeeModel.find();
-    console.log('get_data 2'); 
-    return json(data);
-  } catch (error) {
-    console.log('Error retrieving data.');    
-  }
-};
-
 async function getAllEmployeeData() {
   try {
     const data = await EmployeeModel.find();
@@ -53,7 +45,7 @@ async function getAllEmployeeData() {
 
 /* GET home page. */
 router.get('/', async function(req, res, next) {  
-  await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise
+  await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise 
 
   try {
     var employeeData = await getAllEmployeeData();
@@ -62,7 +54,7 @@ router.get('/', async function(req, res, next) {
 
     // Convert employeeData to JSON
     const json_employee_data = JSON.stringify(employeeData);
-    console.log('This should work now:' + json_employee_data); // Corrected log statement
+    // console.log('This should work now:' + json_employee_data); // Corrected log statement
 
     res.render('index', { title: 'Express', dummy_table_data, json_employee_data });
   } catch (error) {
