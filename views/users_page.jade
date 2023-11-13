@@ -1,0 +1,23 @@
+extends layout
+
+block content
+  h1= title
+  p Users Page
+  
+  // Products listing
+  table
+    thead
+      tr.text-left
+        th User Name
+
+    tbody
+      each user in userData
+        tr
+          td= user.username
+          
+          td
+            form(action=`/users/remove_user/${user.username}`, method='post', style='display:inline;')
+              button(type='submit', style='color: red;') Delete
+
+  
+

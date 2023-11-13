@@ -3,6 +3,8 @@ extends layout
 block content
   h1 Login
   != message
+  p logged as: #{logged_username}
+
   p
     | Try accessing
     a(href='/restricted') /restricted

@@ -45,7 +45,7 @@ async function getAllEmployeeData() {
 
 /* GET home page. */
 router.get('/', async function(req, res, next) {  
-  await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise
+  await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise 
 
   try {
     var employeeData = await getAllEmployeeData();
