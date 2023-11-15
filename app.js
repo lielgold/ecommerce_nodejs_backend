@@ -7,6 +7,16 @@ var logger = require('morgan');
 var hash = require('pbkdf2-password')()
 var session = require('express-session');
 
+const cors = require('cors');
+
+const FRONT_URL = 'http://localhost:4200';
+
+// Enable CORS for only the specified origin (frontend on port 4200)
+const corsOptions = {
+  origin: FRONT_URL,
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
@@ -38,6 +48,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(cors(corsOptions));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -251,6 +263,8 @@ app.post('/register', function (req, res, next) {
 
 
 ////// end login code
+
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
