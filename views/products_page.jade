@@ -4,47 +4,55 @@ block content
   h1= title
   p Products Page
 
-  // Form for adding a new person
+  // Form for adding a new product
   form(action='/products', method='post')
     label(for='name') Name:
     input(type='text', name='name', required)
 
-    label(for='age') Age:
-    input(type='number', name='age', required)
+    label(for='price') Price:
+    input(type='number', name='price', required)
 
-    label(for='occupation') Occupation:
-    input(type='text', name='occupation', required)
+    label(for='description') Description:
+    input(type='text', name='description', required)
 
-    button(type='submit') Add Person  
+    label(for='category') Category:
+    select(name='category')
+      option(value='yellow') Yellow
+      option(value='red') Red
+      option(value='blue') Blue
+
+    button(type='submit') Add Product
   
   // Products listing
   table
     thead
       tr.text-left
         th Name
-        th Age
-        th Occupation
+        th Price
+        th Description
+        th Category
         th Actions
 
     tbody
-      each person in employeeData
+      each product in productData
         tr
-          td= person.name
+          td= product.name
           td
-            span(class='editable' id=`age_${person.name}`)= person.age
-            form(action=`/edit/${person.name}`, method='post', style='display:inline;')              
-              input(type='number', name='newAge', required)
-              button(type='submit') Update
+            span(class='editable' id=`price_${product.name}`)= product.price
           td
-            span(class='editable' id=`occupation_${person.name}`)= person.occupation
-            form(action=`/edit/${person.name}`, method='post', style='display:inline;')              
-              input(type='text', name='newOccupation', required)
+            span(class='editable' id=`description_${product.name}`)= product.description
+          td
+            span(class='editable' id=`category_${product.name}`)= product.category
+          td
+            form(action=`/edit/${product.name}`, method='post', style='display:inline;')              
+              input(type='number', name='newPrice', required)
+              input(type='text', name='newDescription', required)
+              select(name='newCategory')
+                option(value='yellow') Yellow
+                option(value='red') Red
+                option(value='blue') Blue
               button(type='submit') Update
 
-          
           td
-            form(action=`/remove/${person.name}`, method='post', style='display:inline;')
+            form(action=`/remove/${product.name}`, method='post', style='display:inline;')
               button(type='submit', style='color: red;') Delete
-
-  
-

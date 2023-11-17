@@ -5,7 +5,25 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
 var hash = require('pbkdf2-password')()
-var session = require('express-session');
+var session = require('express-session'); //TODO remove session and all associated code after front is finished
+
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+
+const FRONT_URL = 'http://localhost:4200';
+const USE_FRONT = true;
+// Secret key used for signing tokens.
+const secretKey = 'very_secret_key';
+
+
+// Enable CORS for only the specified origin (frontend on port 4200)
+const corsOptions = {
+  origin: FRONT_URL,
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
+
+
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -38,6 +56,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(cors(corsOptions));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -115,7 +135,7 @@ async function authenticate_v2(name, pass, fn) {
   .then((foundUser) => {
     if (foundUser) {
       // User found
-      user = foundUser;
+      user = foundUser;   
       console.log('User found:', foundUser);      
     } else {
       // User not found
@@ -161,11 +181,22 @@ app.get('/restricted_page', restrict, function(req, res){
   res.render('restricted_page');
 });
 
+// old version, used only on backend
 app.get('/logout', function(req, res){
   // destroy the user's session to log them out
   // will be re-created next request
   req.session.destroy(function(){
-    res.redirect('/');
+    res.redirect('/');    
+  });
+});
+
+// new version, used in front
+app.post('/logout', function(req, res){
+  // destroy the user's session to log them out
+  // will be re-created next request
+  req.session.destroy(function(){
+    //res.redirect('/');
+    res.status(200).json({ success: true });
   });
 });
 
@@ -190,7 +221,16 @@ app.post('/login', function (req, res, next) {
         req.session.success = 'Authenticated as ' + req.body.username
           + ' click to <a href="/logout">logout</a>. '
           + ' You may now access <a href="/restricted">/restricted</a>.';
-        res.redirect('back');
+
+        // User is authenticated, generate a token
+        const payload_username = req.session.user;        
+        const token = jwt.sign({ payload_username }, secretKey, { expiresIn: '1h' });
+
+        // Return the token to the client
+        if(USE_FRONT) res.json({ token });
+        else {
+          res.redirect('back');
+        }        
       });
     } else {
       req.session.error = 'Authentication failed, please check your '
@@ -249,8 +289,42 @@ app.post('/register', function (req, res, next) {
   });    
 });
 
+app.get('/restricted_test', authenticateToken, function(req, res){
+  res.status(200);  
+});
+
+function authenticateToken(req, res, next) {
+  const token = req.headers['authorization'];  
+  const tokenWithoutBearer = extractTokenWithBearerPrefix(token);  
+
+  if (!tokenWithoutBearer) return res.status(401).json({ message: 'Unauthorized: Token missing' });
+
+  jwt.verify(tokenWithoutBearer, secretKey, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Forbidden: Token not verified' });
+    }
+
+    req.user = user;
+    next();
+  });
+
+  function extractTokenWithBearerPrefix(tokenWithBearer) {
+    // Check if the token starts with "Bearer "
+    if (tokenWithBearer.startsWith('Bearer ')) {
+      // Split the string to extract the token part
+      const tokenWithoutBearer = tokenWithBearer.split('Bearer ')[1];
+      return tokenWithoutBearer;
+    } else {
+      // If the token doesn't start with "Bearer ", return the original token
+      return tokenWithBearer;
+    }
+  }  
+}
+
 
 ////// end login code
+
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -3,20 +3,22 @@ var router = express.Router();
 
 // dummy database
 
-const EmployeeModel = require('../models/EmployeeModel');
+const USE_FRONT = true;
+
+const ProductModel = require('../models/ProductModel');
 
 const dummy_table_data = [
-  { name: 'John Doe', age: 30, occupation: 'Developer' },
-  { name: 'Jane Smith', age: 25, occupation: 'Designer' },
-  { name: 'Bob Johnson', age: 35, occupation: 'Manager' }
+  { name: 'John Doe', prince: 30, description: 'Developer' },
+  { name: 'Jane Smith', prince: 25, description: 'Designer' },
+  { name: 'Bob Johnson', prince: 35, description: 'Manager' }
 ];
 
 async function add_dummy_data(){
-  EmployeeModel.findOne({ name: 'John Doe' })
+  ProductModel.findOne({ name: 'John Doe' })
   .then(result => {
     if (!result) {
       // Insert the dummy data
-      return EmployeeModel.insertMany(dummy_table_data);
+      return ProductModel.insertMany(dummy_table_data);
     } else {
       console.log('Data already exists. Skipping insertion.');
       return Promise.resolve(); // Resolving with an empty promise for consistency
@@ -31,14 +33,14 @@ async function add_dummy_data(){
 
 }
 
-async function getAllEmployeeData() {
+async function getAllProductData() {
   try {
-    const data = await EmployeeModel.find();
+    const data = await ProductModel.find();
     console.log('got the data');
     //console.log('This works:' + JSON.stringify(data));
     return data;
   } catch (error) {
-    console.error('Error retrieving employee data:', error);
+    console.error('Error retrieving product data:', error);
     throw error; // Re-throw the error for the calling code to handle
   }
 }
@@ -48,15 +50,15 @@ router.get('/', async function(req, res, next) {
   await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise 
 
   try {
-    var employeeData = await getAllEmployeeData();
+    var productData = await getAllProductData();
 
-    employeeData = await EmployeeModel.find();
+    productData = await ProductModel.find();
 
-    // Convert employeeData to JSON
-    const json_employee_data = JSON.stringify(employeeData);
-    // console.log('This should work now:' + json_employee_data); // Corrected log statement
+    // Convert productData to JSON
+    const json_product_data = JSON.stringify(productData);
+    // console.log('This should work now:' + json_product_data); // Corrected log statement
 
-    res.render('index', { title: 'Express', dummy_table_data, json_employee_data });
+    res.render('index', { title: 'Express', dummy_table_data, json_product_data });
   } catch (error) {
     res.status(500).json({ error: 'Error processing data' });
   }
@@ -66,29 +68,38 @@ router.get('/', async function(req, res, next) {
 router.get('/products', async function(req, res, next) {  
   //await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise
   try {
-    var employeeData = await getAllEmployeeData();
+    var productData = await getAllProductData();
 
-    // Convert employeeData to JSON
-    //const json_employee_data = JSON.stringify(employeeData);
-    //console.log('This should work now:' + JSON.stringify(employeeData)); // Corrected log statement
+    // Convert productData to JSON
+    //const json_product_data = JSON.stringify(productData);
+    //console.log('This should work now:' + JSON.stringify(productData)); // Corrected log statement
 
-    res.render('products_page', { employeeData });
+    if (USE_FRONT) {
+      res.json(productData);
+    } else {
+      res.render('products_page', { productData });
+    }
+        
   } catch (error) {
     res.status(500).json({ error: 'Error processing data' });
   }
 });
 
-/* POST to create a new employee. */
+/* POST to create a new product. */
 router.post('/products', async function(req, res, next) {
-  // Your logic for handling the POST request to create a new product goes here
-  // You can access data from the request body using req.body
   try {
-    // Creating a new employee
-    const { name, age, occupation } = req.body;
-    const new_employee = await EmployeeModel.create({ name: name, age: age, occupation: occupation },);
+    // Extracting data from the request body
+    const { name, price, description, category } = req.body;
+
+    // Creating a new product with category
+    const newProduct = await ProductModel.create({
+      name: name,
+      price: price,
+      description: description,
+      category: category,
+    });
 
     // Respond with a success message or the newly created product
-    var employeeData = await getAllEmployeeData();
     res.redirect('/products');
   } catch (error) {
     console.error('Error creating a new product:', error.message);
@@ -96,57 +107,59 @@ router.post('/products', async function(req, res, next) {
   }
 });
 
-/* POST to remove an empolyee. */
+/* POST to remove an prodcut. */
 router.post('/remove/:name', async function(req, res, next) {
   // Your logic for handling the POST request to create a new product goes here
   // You can access data from the request body using req.body
-  const employeeName = req.params.name;    
+  const productName = req.params.name;    
   try {
-    // get emplyee name    
-    const deletedEmployee = await EmployeeModel.findOneAndDelete({ name: employeeName });
+    // get product name    
+    const deletedProduct = await ProductModel.findOneAndDelete({ name: productName });
 
-    if (deletedEmployee) {
-      console.log(`Employee ${employeeName} removed successfully`);
+    if (deletedProduct) {
+      console.log(`Product ${deletedProduct} removed successfully`);
       // Send a response or redirect the user as needed
       res.redirect('/products');
     } else {
-      console.log(`Employee ${employeeName} not found`);
-      // Send a response indicating that the employee was not found
-      res.status(404).send('Employee not found');
+      console.log(`Product ${deletedProduct} not found`);
+      // Send a response indicating that the Product was not found
+      res.status(404).send('Product not found');
     }
   } catch (error) {
-    console.error('Error removing employee:', error.message);
+    console.error('Error removing Product:', error.message);
     // Send a response indicating an internal server error
     res.status(500).send('Internal Server Error');
   }
 });
 
-/* POST to edit an empolyee. */
+/* POST to edit a product. */
 router.post('/edit/:name', async function(req, res, next) {
-  const employeeName = req.params.name;
-  const { newAge, newOccupation } = req.body;
+  const productName = req.params.name;
+  const { newPrice, newDescription, newCategory } = req.body;
   try {
-    // Use findOneAndUpdate to find and update the employee by name
-    const updatedEmployee = await EmployeeModel.findOneAndUpdate(
-      { name: employeeName },
-      { age: newAge, occupation: newOccupation },
+    // Use findOneAndUpdate to find and update the product by name
+    const updatedProduct = await ProductModel.findOneAndUpdate(
+      { name: productName },
+      { price: newPrice, description: newDescription, category: newCategory },
       { new: true } // Return the updated document
     );
 
-    if (updatedEmployee) {
-      console.log(`Employee ${employeeName} updated successfully`);
+    if (updatedProduct) {
+      console.log(`Product ${updatedProduct} updated successfully`);
       // Send a response or redirect the user as needed
       res.redirect('/products');
     } else {
-      console.log(`Employee ${employeeName} not found`);
-      // Send a response indicating that the employee was not found
-      res.status(404).send('Employee not found');
+      console.log(`Product ${updatedProduct} not found`);
+      // Send a response indicating that the product was not found
+      res.status(404).send('Product not found');
     }
   } catch (error) {
-    console.error('Error updating employee:', error.message);
+    console.error('Error updating product:', error.message);
     // Send a response indicating an internal server error
     res.status(500).send('Internal Server Error');
   }
 });
+
+
 
 module.exports = router;
