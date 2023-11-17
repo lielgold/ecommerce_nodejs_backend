@@ -96,7 +96,7 @@ router.post('/products', async function(req, res, next) {
       name: name,
       price: price,
       description: description,
-      category: category, // Include the category field
+      category: category,
     });
 
     // Respond with a success message or the newly created product
@@ -159,5 +159,7 @@ router.post('/edit/:name', async function(req, res, next) {
     res.status(500).send('Internal Server Error');
   }
 });
+
+
 
 module.exports = router;
