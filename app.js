@@ -9,6 +9,7 @@ var session = require('express-session'); //TODO remove session and all associat
 
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const bodyParser = require('body-parser');
 
 const FRONT_URL = 'http://localhost:4200';
 const USE_FRONT = true;
@@ -21,12 +22,6 @@ const corsOptions = {
   origin: FRONT_URL,
   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
-
-
-
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
 
 // DB code
 
@@ -58,7 +53,10 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(cors(corsOptions));
+app.use(bodyParser.json());
 
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/users');
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
@@ -323,7 +321,6 @@ function authenticateToken(req, res, next) {
 
 
 ////// end login code
-
 
 
 // catch 404 and forward to error handler
