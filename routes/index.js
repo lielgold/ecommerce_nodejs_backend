@@ -177,5 +177,10 @@ router.post('/checkout', async function(req, res, next) {
   }
 });
 
+// get user feedback
+router.post('/contact_us', function(req, res){  
+  res.status(200).json({ message: 'Got feedback' }); 
+});
+
 
 module.exports = router;

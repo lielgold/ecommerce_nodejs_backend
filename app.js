@@ -225,7 +225,7 @@ app.post('/login', function (req, res, next) {
         const token = jwt.sign({ payload_username }, secretKey, { expiresIn: '1h' });
 
         // Return the token to the client
-        if(USE_FRONT) res.json({ token });
+        if(USE_FRONT) res.json({ token, isUserAdmin: user.isAdmin });
         else {
           res.redirect('back');
         }        
