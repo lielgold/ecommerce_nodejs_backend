@@ -160,6 +160,27 @@ router.post('/edit/:name', async function(req, res, next) {
   }
 });
 
+/* POST customer buys all products in the shopping cart. */
+router.post('/checkout', async function(req, res, next) {
+  try {
+    // contains ids of products to buy
+    const productIds = req.body.productIds || [];
+
+    // Your checkout logic goes here ("find products by ID and buy them")
+
+    // Assuming the checkout was successful
+    res.status(200).json({ message: 'Checkout successful' });
+  } catch (error) {
+    // Handle errors here
+    console.error('Error during checkout:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// get user feedback
+router.post('/contact_us', function(req, res){  
+  res.status(200).json({ message: 'Got feedback' }); 
+});
 
 
 module.exports = router;
