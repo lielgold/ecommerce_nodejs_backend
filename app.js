@@ -86,48 +86,13 @@ app.use(function(req, res, next){
   next();
 });
 
-// dummy database
-
-var users = {
-  tj: { name: 'tj' }
-};
-
-// when you create a user, generate a salt
-// and hash the password ('foobar' is the pass here)
-
-hash({ password: 'foobar' }, function (err, pass, salt, hash) {
-  if (err) throw err;
-  // store the salt & hash in the "db"
-  users.tj.salt = salt;
-  users.tj.hash = hash;
-});
-
-
-// Authenticate using our plain-object database of doom!
-
-function authenticate(name, pass, fn) {
-  if (!module.parent) console.log('authenticating %s:%s', name, pass);
-  var user = users[name];
-  // query the db for the given username
-  if (!user) return fn(null, null)
-  // apply the same algorithm to the POSTed password, applying
-  // the hash against the pass / salt, if there is a match we
-  // found the user
-  hash({ password: pass, salt: user.salt }, function (err, pass, salt, hash) {
-    if (err) return fn(err);
-    if (hash === user.hash) return fn(null, user)
-    fn(null, null)
-  });
-}
-
-// Authenticate using our plain-object database of doom!
+// Authenticate user
 async function authenticate_v2(name, pass, fn) {
   if (!module.parent) console.log('authenticating %s:%s', name, pass);
   //var user = users[name];
   console.log('searching user'); 
 
-  var user = null;
-  
+  var user = null;  
 
   await UserModel.findOne({ username: name })
   .then((foundUser) => {
@@ -167,14 +132,6 @@ function restrict(req, res, next) {
   }
 }
 
-app.get('/', function(req, res){
-  res.redirect('/login');
-});
-
-app.get('/restricted', restrict, function(req, res){
-  res.send('Wahoo! restricted area, click to <a href="/logout">logout</a>');
-});
-
 app.get('/restricted_page', restrict, function(req, res){
   res.render('restricted_page');
 });
@@ -192,55 +149,25 @@ app.get('/logout', function(req, res){
 app.post('/logout', function(req, res){
   // destroy the user's session to log them out
   // will be re-created next request
-  req.session.destroy(function(){
-    //res.redirect('/');
+  req.session.destroy(function(){    
     res.status(200).json({ success: true });
   });
 });
 
-app.get('/login', function(req, res){
-  var logged_username = '';
-  if(req.session.user) logged_username = req.session.user;
-  res.render('login', { logged_username });
-});
 
+// POST with username and password to login
 app.post('/login', function (req, res, next) {
   //authenticate(req.body.username, req.body.password, function(err, user){
   authenticate_v2(req.body.username, req.body.password, function(err, user){
     if (err) return next(err)
     if (user) {
-      // Regenerate session when signing in
-      // to prevent fixation
-      req.session.regenerate(function(){
-        // Store the user's primary key
-        // in the session store to be retrieved,
-        // or in this case the entire user object
-        req.session.user = req.body.username;
-        req.session.success = 'Authenticated as ' + req.body.username
-          + ' click to <a href="/logout">logout</a>. '
-          + ' You may now access <a href="/restricted">/restricted</a>.';
-
-        // User is authenticated, generate a token
-        const payload_username = req.session.user;        
-        const token = jwt.sign({ payload_username }, secretKey, { expiresIn: '1h' });
-
-        // Return the token to the client
-        if(USE_FRONT) res.json({ token, isUserAdmin: user.isAdmin });
-        else {
-          res.redirect('back');
-        }        
-      });
+      const payload_username = req.session.user;        
+      const token = jwt.sign({ payload_username }, secretKey, { expiresIn: '1h' });   
+      res.json({ token, isUserAdmin: user.isAdmin });   
     } else {
-      req.session.error = 'Authentication failed, please check your '
-        + ' username and password.'
-        + ' (use "tj" and "foobar")';
-      res.redirect('/login');
+      return res.status(403).json({ message: 'Login failed' });
     }
   });
-});
-
-app.get('/register', function(req, res){
-  res.render('register', { error_message: '' });
 });
 
 app.post('/register', function (req, res, next) {
@@ -254,10 +181,7 @@ app.post('/register', function (req, res, next) {
   users[name] = password
 
   hash({ password: password }, function (err, pass, salt, hash) {
-    if (err) throw err;
-    // store the salt & hash in the "db"
-    users.tj.salt = salt;
-    users.tj.hash = hash;
+    if (err) throw err;   
 
     // Using create method with Promises
     UserModel.create({
@@ -267,30 +191,26 @@ app.post('/register', function (req, res, next) {
     })
       .then((createdUser) => {
         console.log('User created:', createdUser);
+        //res.status(200).json({ success: true });
+        const name_of_user = createdUser.username;
+        const token = jwt.sign({ name_of_user }, secretKey, { expiresIn: '1h' });
+        // Return the token to the client        
+        return res.status(200).json({ token, isUserAdmin: createdUser.isAdmin });
       })
       .catch((err) => {
         console.error(err);
+        return res.status(403).json({ message: 'Registration failed' });        
       });
   });
-
-  //UserModel.create(username = name, hashed_password = hash, salted_password = pass);
-
-  req.session.regenerate(function(){
-    // Store the user's primary key
-    // in the session store to be retrieved,
-    // or in this case the entire user object
-    req.session.user = name;
-    req.session.success = 'Authenticated as ' + name
-      + ' click to <a href="/logout">logout</a>. '
-      + ' You may now access <a href="/restricted">/restricted</a>.';
-    res.redirect('/');
-  });    
 });
 
-app.get('/restricted_test', authenticateToken, function(req, res){
-  res.status(200);  
+// get user feedback
+// Not even saved in the database :D
+app.post('/contact_us', authenticateToken, function(req, res){    
+  res.status(200).json({ message: 'Got feedback' }); 
 });
 
+// authenticate the user's token
 function authenticateToken(req, res, next) {
   const token = req.headers['authorization'];  
   const tokenWithoutBearer = extractTokenWithBearerPrefix(token);  
@@ -322,6 +242,72 @@ function authenticateToken(req, res, next) {
 
 ////// end login code
 
+// product code
+
+/* POST to create a new product. */
+app.post('/products', authenticateToken, async function(req, res, next) {
+  try {
+    // Extracting data from the request body
+    const { name, price, description, category } = req.body;
+
+    // Creating a new product with category
+    const newProduct = await ProductModel.create({
+      name: name,
+      price: price,
+      description: description,
+      category: category,
+    });
+
+    // Respond with a success message or the newly created product
+    res.redirect('/products');
+  } catch (error) {
+    console.error('Error creating a new product:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+/* POST to remove an prodcut. */
+app.post('/remove/:id', authenticateToken, async function(req, res, next) {
+  // Your logic for handling the POST request to create a new product goes here
+  // You can access data from the request body using req.body
+  const productID = req.params.id;    
+  try {
+    // get product name    
+    const deletedProduct = await ProductModel.findOneAndDelete({ _id: productID });
+
+    if (deletedProduct) {
+      console.log(`Product ${deletedProduct} removed successfully`);
+      // Send a response or redirect the user as needed
+      res.redirect('/products');
+    } else {
+      console.log(`Product ${deletedProduct} not found`);
+      // Send a response indicating that the Product was not found
+      res.status(404).send('Product not found');
+    }
+  } catch (error) {
+    console.error('Error removing Product:', error.message);
+    // Send a response indicating an internal server error
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+/* POST customer buys all products in the shopping cart. */
+app.post('/checkout', authenticateToken, async function(req, res, next) {
+  try {
+    // contains ids of products to buy
+    const productIds = req.body.productIds || [];
+    // Checkout logic goes here (payment, shipping, etc')
+
+    // Assuming the checkout was successful
+    res.status(200).json({ message: 'Checkout successful' });
+  } catch (error) {
+    // Handle errors here
+    console.error('Error during checkout:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// end product code
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
