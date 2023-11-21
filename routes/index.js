@@ -47,7 +47,7 @@ async function getAllProductData() {
 
 /* GET home page. */
 router.get('/', async function(req, res, next) {  
-  await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise 
+  //await add_dummy_data(); // Assuming add_dummy_data is asynchronous and returns a promise 
 
   try {
     var productData = await getAllProductData();
@@ -108,13 +108,13 @@ router.post('/products', async function(req, res, next) {
 });
 
 /* POST to remove an prodcut. */
-router.post('/remove/:name', async function(req, res, next) {
+router.post('/remove/:id', async function(req, res, next) {
   // Your logic for handling the POST request to create a new product goes here
   // You can access data from the request body using req.body
-  const productName = req.params.name;    
+  const productID = req.params.id;    
   try {
     // get product name    
-    const deletedProduct = await ProductModel.findOneAndDelete({ name: productName });
+    const deletedProduct = await ProductModel.findOneAndDelete({ _id: productID });
 
     if (deletedProduct) {
       console.log(`Product ${deletedProduct} removed successfully`);

@@ -267,13 +267,18 @@ app.post('/register', function (req, res, next) {
     })
       .then((createdUser) => {
         console.log('User created:', createdUser);
+        //res.status(200).json({ success: true });
+        const name_of_user = createdUser.username;
+        const token = jwt.sign({ name_of_user }, secretKey, { expiresIn: '1h' });
+        // Return the token to the client        
+        return res.status(200).json({ token, isUserAdmin: createdUser.isAdmin });
       })
       .catch((err) => {
         console.error(err);
+        return res.status(403)
+        //return res.status(403).json({ message: 'Registration failed' });
       });
   });
-
-  //UserModel.create(username = name, hashed_password = hash, salted_password = pass);
 
   req.session.regenerate(function(){
     // Store the user's primary key
@@ -283,7 +288,7 @@ app.post('/register', function (req, res, next) {
     req.session.success = 'Authenticated as ' + name
       + ' click to <a href="/logout">logout</a>. '
       + ' You may now access <a href="/restricted">/restricted</a>.';
-    res.redirect('/');
+    //res.redirect('/');
   });    
 });
 
