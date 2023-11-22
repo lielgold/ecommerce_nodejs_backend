@@ -88,8 +88,7 @@ app.use(function(req, res, next){
 
 // Authenticate user
 async function authenticate_v2(name, pass, fn) {
-  if (!module.parent) console.log('authenticating %s:%s', name, pass);
-  //var user = users[name];
+  if (!module.parent) console.log('authenticating %s:%s', name, pass);  
   console.log('searching user'); 
 
   var user = null;  
@@ -170,15 +169,15 @@ app.post('/login', function (req, res, next) {
   });
 });
 
-app.post('/register', function (req, res, next) {
+app.post('/register', async function (req, res, next) {
   const name = req.body.username;
   const password = req.body.password;
   const retype_password = req.body.retype_password;
-  if (password!==retype_password) res.render('register', { error_message: 'Passwords don\'t match'});
-  else if (users.hasOwnProperty(name)) res.render('register', { error_message: 'Username already register. Try another one.'});
-  else if (name.length ===0 || password.length ===0 || retype_password.length ===0) res.render('register', { error_message: 'You need to fill all fields.'});
+  
 
-  users[name] = password
+  if (password!==retype_password) res.render('register', { error_message: 'Passwords don\'t match'});
+  else if (await UserModel.findOne({ username: name })) res.render('register', { error_message: 'Username already register. Try another one.'});
+  else if (name.length ===0 || password.length ===0 || retype_password.length ===0) res.render('register', { error_message: 'You need to fill all fields.'});  
 
   hash({ password: password }, function (err, pass, salt, hash) {
     if (err) throw err;   
