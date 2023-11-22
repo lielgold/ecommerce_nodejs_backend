@@ -17,6 +17,7 @@ const USE_FRONT = true;
 const secretKey = 'very_secret_key';
 
 
+
 // Enable CORS for only the specified origin (frontend on port 4200)
 const corsOptions = {
   origin: FRONT_URL,
@@ -27,6 +28,7 @@ const corsOptions = {
 
 const mongoose = require('mongoose');
 const UserModel = require('./models/UserModel');
+const ProductModel = require('./models/ProductModel');
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017', { useNewUrlParser: true, useUnifiedTopology: true })
