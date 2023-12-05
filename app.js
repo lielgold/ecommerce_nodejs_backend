@@ -17,16 +17,18 @@ const USE_FRONT = true;
 const secretKey = 'very_secret_key';
 
 
+
 // Enable CORS for only the specified origin (frontend on port 4200)
 const corsOptions = {
   origin: FRONT_URL,
   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
-// DB code
+// DB setup
 
 const mongoose = require('mongoose');
 const UserModel = require('./models/UserModel');
+const ProductModel = require('./models/ProductModel');
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017', { useNewUrlParser: true, useUnifiedTopology: true })
@@ -37,7 +39,9 @@ mongoose.connect('mongodb://localhost:27017', { useNewUrlParser: true, useUnifie
     console.error('Error connecting to MongoDB:', error);
   });
 
-// END DB code
+// setup dummy users and data
+const dummy_product_data = require('./static/dummy_product_data');  
+_initial_db_setup();
 
 
 var app = express();
@@ -52,6 +56,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// auth setup
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
@@ -88,12 +93,12 @@ app.use(function(req, res, next){
 
 // Authenticate user
 async function authenticate_v2(name, pass, fn) {
-  if (!module.parent) console.log('authenticating %s:%s', name, pass);
-  //var user = users[name];
+  if (!module.parent) console.log('authenticating %s:%s', name, pass);  
   console.log('searching user'); 
 
   var user = null;  
 
+  // find user
   await UserModel.findOne({ username: name })
   .then((foundUser) => {
     if (foundUser) {
@@ -108,8 +113,7 @@ async function authenticate_v2(name, pass, fn) {
   .catch((err) => {
     console.error("there was an error");    
     console.error(err);    
-  }); 
-  
+  });   
 
   // query the db for the given username
   if (!user) return fn(null, null)
@@ -170,18 +174,30 @@ app.post('/login', function (req, res, next) {
   });
 });
 
-app.post('/register', function (req, res, next) {
+app.post('/register', async function (req, res, next) {
   const name = req.body.username;
   const password = req.body.password;
   const retype_password = req.body.retype_password;
+  
+
   if (password!==retype_password) res.render('register', { error_message: 'Passwords don\'t match'});
-  else if (users.hasOwnProperty(name)) res.render('register', { error_message: 'Username already register. Try another one.'});
-  else if (name.length ===0 || password.length ===0 || retype_password.length ===0) res.render('register', { error_message: 'You need to fill all fields.'});
+  else if (await UserModel.findOne({ username: name })) res.render('register', { error_message: 'Username already register. Try another one.'});
+  else if (name.length ===0 || password.length ===0 || retype_password.length ===0) res.render('register', { error_message: 'You need to fill all fields.'});  
 
-  users[name] = password
+  createNewUser(password, name, res);
+});
 
+// get user feedback
+// Not even saved in the database :D
+app.post('/contact_us', authenticateToken, function(req, res){    
+  res.status(200).json({ message: 'Got feedback' }); 
+});
+
+// create a new user
+// if res is null than no response is sent to the client, used to initialize the db for testing
+function createNewUser(password, name, res) {
   hash({ password: password }, function (err, pass, salt, hash) {
-    if (err) throw err;   
+    if (err) throw err;
 
     // Using create method with Promises
     UserModel.create({
@@ -194,21 +210,19 @@ app.post('/register', function (req, res, next) {
         //res.status(200).json({ success: true });
         const name_of_user = createdUser.username;
         const token = jwt.sign({ name_of_user }, secretKey, { expiresIn: '1h' });
-        // Return the token to the client        
-        return res.status(200).json({ token, isUserAdmin: createdUser.isAdmin });
+        // Return the token to the client
+        if(res==null) {
+          return createdUser;
+        }        
+        else return res.status(200).json({ token, isUserAdmin: createdUser.isAdmin });
       })
       .catch((err) => {
         console.error(err);
-        return res.status(403).json({ message: 'Registration failed' });        
+        if(res==null) return;
+        else return res.status(403).json({ message: 'Registration failed' });
       });
-  });
-});
-
-// get user feedback
-// Not even saved in the database :D
-app.post('/contact_us', authenticateToken, function(req, res){    
-  res.status(200).json({ message: 'Got feedback' }); 
-});
+  });  
+}
 
 // authenticate the user's token
 function authenticateToken(req, res, next) {
@@ -306,6 +320,42 @@ app.post('/checkout', authenticateToken, async function(req, res, next) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+// populate the server with dummy users and data
+async function _initial_db_setup(){
+  // create users
+  if (!await UserModel.findOne({ username: "regular_user" })) {
+    await UserModel.create({
+      username: "regular_user",
+      hashed_password: '5kEmOYOoI03lOxt+o66WtaFOrqwL2wZTICAiwgkt3sj+IWIL5Vy85X+TBJS9krCvAm8LYzGq7a1U3IgTwhDQss/Wcy8lpyQCn8Kaf3tI98cqylsGymJd7RSodBLTyFR/garnONg4KB/9YYRl7/uxbuwG7fphCqpD/haZEDSe2s0=',
+      salted_password: 'RnYXg6EtAOQivk6iKS/IMbbtbJVOaeSXX1sbS0P1pQVxh7zoWFcaR+6OArxui69kiCnMTdfwcD00HEi0VN9Kqw==',
+    })    
+  }
+  if (!await UserModel.findOne({ username: "admin" })) {    
+    await UserModel.create({
+      username: "admin",
+      hashed_password: '0lhCYRW6ZU5iBZShAlk63QrKV4u5/9yNOTZPHjozw2Tw3GGKCMWMjsrzrHND6XyBtGczZ7zwgCo7mSjhtkU5QM0geZ4uFEtIywhGkKz5lfnU5VQ2M2ooK9a5+gFOTcDnKSZ3AleIudMmVja/S4tvqkS4ELZ0+awuv6HaVBPj6XY=',
+      salted_password: 'YCoAa2n2NVXNZLbRjsIQ9Az5VKg2qzu64yH4q87vksbGrQESoqfG9mI0zauGLy/wrudccotb3tE3WrleX9hkiw==',
+      isAdmin: true,
+    })    
+  }
+
+  // create product data
+  for(const d of dummy_product_data){
+    const { name, price, description, category } = d;
+
+    // avoid creating duplicates
+    const p = await ProductModel.findOne({name: name});
+    if (p!==null) break;
+    
+    const newProduct = await ProductModel.create({
+      name: name,
+      price: price,
+      description: description,
+      category: category,
+    }); 
+  }
+}
 
 // end product code
 

@@ -16,6 +16,10 @@ async function getAllProductData() {
   }
 }
 
+const dummy_user_data = {
+  
+}
+
 /* GET home page. */
 /**
  * Used for the temporary backend website.Not actively used in the production Angular frontend.
