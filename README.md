@@ -28,4 +28,4 @@ It's in [this](https://github.com/lielgold/angular_front) repository. Made with 
 
 By default, the frontend will use port 4200, and the website can be accessed at http://localhost:4200/.
 
-![Screenshot1](static/screenshot.jpg?raw=true "Title")
+![Screenshot1](static/screenshot.jpg?raw=true "Homepage screenshot")
