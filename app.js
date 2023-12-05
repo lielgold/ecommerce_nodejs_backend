@@ -195,8 +195,8 @@ app.post('/contact_us', authenticateToken, function(req, res){
 
 // create a new user
 // if res is null than no response is sent to the client, used to initialize the db for testing
-async function createNewUser(password, name, res) {
-  await hash({ password: password }, function (err, pass, salt, hash) {
+function createNewUser(password, name, res) {
+  hash({ password: password }, function (err, pass, salt, hash) {
     if (err) throw err;
 
     // Using create method with Promises
